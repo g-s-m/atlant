@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+option go_package = "atlant/generated/interface;interface";
+
+package interface;
+
+service ProductService {
+  rpc Fetch (FetchRequest) returns (FetchReply) {}
+  rpc List (ListRequest) returns (ListReply) {}
+}
+
+message FetchRequest {
+  string url = 1;
+}
+
+message FetchReply {
+  enum Status {
+    OK = 0;
+    WRONG_FILE_FORMAT = 1;
+    RESOURCE_UNAVAILABLE = 2;
+    INTERNAL_ERROR = 3;
+  }
+  Status status = 1;
+}
+
+message Page {
+  uint64 start = 1;
+  int64 size = 2;
+}
+
+message Sort {
+  enum Type {
+    BY_PRODUCT = 0;
+    BY_PRICE = 1;
+    BY_PRICE_CHANGE = 2;
+    BY_LAST_CHANGE = 3;
+  }
+  Type sortType = 1;
+  bool sortUp = 2;  
+}
+
+message ListRequest {
+  Page page = 1;
+  Sort sort = 2;
+}
+
+message ListReply {
+  string product = 1;
+  double price = 2;
+  int64 timestamp = 3;
+  uint64 changed = 4;
+}
+
