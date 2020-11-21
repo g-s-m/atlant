@@ -44,10 +44,14 @@ message ListRequest {
   Sort sort = 2;
 }
 
-message ListReply {
+message Product {
   string product = 1;
   double price = 2;
   int64 timestamp = 3;
   uint64 changed = 4;
+}
+
+message ListReply {
+  repeated Product productList = 1;
 }
 

@@ -1,15 +1,14 @@
 package main
 
 import (
-	"atlant/requestor"
-	_ "atlant/service"
-	"fmt"
-	"github.com/vrischmann/envconfig"
+	"atlant/service"
 	"log"
+
+	"github.com/vrischmann/envconfig"
 )
 
 type Config struct {
-	Port string `envconfig:"PS_PORT,default=50000"`
+	Port string `envconfig:"PS_ADDR_PORT,default=:50000"`
 }
 
 func getConfig() *Config {

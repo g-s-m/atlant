@@ -1,71 +1,60 @@
 package service
 
 import (
-	"google.golang.org/grpc"
-	req "atlant/requestor"
 	srv "atlant/generated/interface"
+	dto "atlant/service/dto"
 	"context"
-	"os"
-	"net"
 	"log"
+	"net"
+	"os"
 	"os/signal"
 	"syscall"
+	"time"
+
+	"google.golang.org/grpc"
 )
+
+type IRequestHandler interface {
+	DoFetch(file string) error
+	DoList(sortBy dto.SortType, sortUp bool) ([]dto.Product, error)
+}
 
 type server struct {
 	srv.UnimplementedProductServiceServer
-}
-/*
-struct RequestHandler {
-	Requestor r
-	Processor p
-	Storage s
+	worker IRequestHandler
 }
 
-func (p *RequestHandler) DoFetch(path string) error {
-	r.GetFile(url)
-	p.Process()
-	s.Save()
-}
-
-func (p *RequestHandler) DoList() error {
-}
-*/
 func (s *server) Fetch(ctx context.Context, request *srv.FetchRequest) (*srv.FetchReply, error) {
 	doneCh := make(chan srv.FetchReply_Status)
 
 	go func() {
-		file, err := req.GetCsvFile(request.GetUrl(), 30)
-		//storage.Save(proc.ProcessFile(file))
-		if err != nil {
-			log.Printf("Error during getting csv file: %v", err)
-			doneCh <-srv.FetchReply_RESOURCE_UNAVAILABLE
-		}
-		doneCh <- srv.FetchReply_OK
+		doneCh <- dto.ErrorToStatus(s.worker.DoFetch(request.GetUrl()))
 	}()
-/*
-	go func() {
-		s.handler.DoFetch(url)
-	}()*/
+
 	status := srv.FetchReply_OK
 	select {
-		case <-ctx.Done():
-			log.Printf("Operation timed out")
-			status := srv.FetchReply_RESOURCE_UNAVAILABLE
-		case status := <-doneCh:
+	case <-ctx.Done():
+		log.Printf("Operation was canceled")
+		status = srv.FetchReply_RESOURCE_UNAVAILABLE
+	case status = <-doneCh:
 	}
 
-	return &srv.FetchReply {
-		Status : status,
+	return &srv.FetchReply{
+		Status: status,
 	}, nil
 }
 
-func (s* server) List(ctx context.Context, request *srv.ListRequest) (*srv.ListReply, error) {
-	return &srv.ListReply {
-		Product : "p",
-		Price : 12.1234,
-		Timestamp : 123456,
-		Changed : 4,
+func (s *server) List(ctx context.Context, request *srv.ListRequest) (*srv.ListReply, error) {
+	prod := dto.ProductDto(dto.Product{
+		Name:        "q",
+		Price:       1.23,
+		ChangeCount: 2,
+		ChangeDate:  time.Now(),
+	})
+	return &srv.ListReply{
+		ProductList: []*srv.Product{
+			&prod,
+		},
 	}, nil
 }
 
@@ -76,12 +65,12 @@ func RunService(port string) {
 	}
 	s := grpc.NewServer()
 	srv.RegisterProductServiceServer(s, &server{})
-	
+
 	term := make(chan os.Signal)
 	signal.Notify(term, syscall.SIGTERM, syscall.SIGINT)
-	
+
 	errCh := make(chan error)
-	
+
 	go func() {
 		if err := s.Serve(listen); err != nil {
 			errCh <- err
@@ -89,9 +78,8 @@ func RunService(port string) {
 	}()
 	defer s.GracefulStop()
 	select {
-		case err := <-errCh:
-			log.Fatalf("failed to serve: %v", err)
-		case <-term:
+	case err := <-errCh:
+		log.Fatalf("failed to serve: %v", err)
+	case <-term:
 	}
 }
-
