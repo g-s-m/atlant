@@ -22,10 +22,7 @@ test: build
 	go test
 
 coverage:
-	go test -coverpkg=./... -coverprofile=coverage.out.tmp
-	cat coverage.out.tmp | grep -v /sqs/sqs.go > cov.out
-	go tool cover -func=cov.out
-	rm cov.out coverage.out.tmp
+	go test -cover ./service/
 
 all: test
 

@@ -1,16 +1,14 @@
 package handler
 
-import (
-	"atlant/service"
-)
+import "atlant/service/dto"
 
-struct RequestHandler {
+type RequestHandler struct {
 }
 
-func (p *RequestHandler) DoFetch(path string) error {
+func (p RequestHandler) DoFetch(path string) error {
 	return nil
 }
 
-func (p *RequestHandler) DoList() ([]Product, error) {
-	return Product{}, nil
+func (p RequestHandler) DoList(page dto.Page, sort dto.SortParams) ([]dto.Product, error) {
+	return []dto.Product{}, nil
 }

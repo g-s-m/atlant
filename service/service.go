@@ -3,28 +3,28 @@ package service
 import (
 	srv "atlant/generated/interface"
 	dto "atlant/service/dto"
+	"atlant/service/handler"
 	"context"
 	"log"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"google.golang.org/grpc"
 )
 
 type IRequestHandler interface {
 	DoFetch(file string) error
-	DoList(sortBy dto.SortType, sortUp bool) ([]dto.Product, error)
+	DoList(page dto.Page, sort dto.SortParams) ([]dto.Product, error)
 }
 
-type server struct {
+type Server struct {
 	srv.UnimplementedProductServiceServer
 	worker IRequestHandler
 }
 
-func (s *server) Fetch(ctx context.Context, request *srv.FetchRequest) (*srv.FetchReply, error) {
+func (s *Server) Fetch(ctx context.Context, request *srv.FetchRequest) (*srv.FetchReply, error) {
 	doneCh := make(chan srv.FetchReply_Status)
 
 	go func() {
@@ -44,27 +44,41 @@ func (s *server) Fetch(ctx context.Context, request *srv.FetchRequest) (*srv.Fet
 	}, nil
 }
 
-func (s *server) List(ctx context.Context, request *srv.ListRequest) (*srv.ListReply, error) {
-	prod := dto.ProductDto(dto.Product{
-		Name:        "q",
-		Price:       1.23,
-		ChangeCount: 2,
-		ChangeDate:  time.Now(),
-	})
+func (s *Server) List(ctx context.Context, request *srv.ListRequest) (*srv.ListReply, error) {
+	doneCh := make(chan struct{})
+	products := []dto.Product{}
+	go func() {
+		var err error
+		products, err = s.worker.DoList(dto.PageDto(request.GetPage()), dto.SortDto(request.GetSort()))
+		if err != nil {
+			log.Printf("List products failed: %v", err)
+		}
+		doneCh <- struct{}{}
+	}()
+
+	var result []*srv.Product
+	select {
+	case <-ctx.Done():
+		log.Printf("Operation was canceled")
+	case <-doneCh:
+		for _, p := range products {
+			product := dto.ProductDto(p)
+			result = append(result, &product)
+		}
+	}
+
 	return &srv.ListReply{
-		ProductList: []*srv.Product{
-			&prod,
-		},
+		ProductList: result,
 	}, nil
 }
 
-func RunService(port string) {
+func (s *Server) Run(port string) {
 	listen, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("Can't start a server: %v", err)
 	}
-	s := grpc.NewServer()
-	srv.RegisterProductServiceServer(s, &server{})
+	grpcServer := grpc.NewServer()
+	srv.RegisterProductServiceServer(grpcServer, s)
 
 	term := make(chan os.Signal)
 	signal.Notify(term, syscall.SIGTERM, syscall.SIGINT)
@@ -72,14 +86,25 @@ func RunService(port string) {
 	errCh := make(chan error)
 
 	go func() {
-		if err := s.Serve(listen); err != nil {
+		if err := grpcServer.Serve(listen); err != nil {
 			errCh <- err
 		}
 	}()
-	defer s.GracefulStop()
+	defer grpcServer.GracefulStop()
 	select {
 	case err := <-errCh:
 		log.Fatalf("failed to serve: %v", err)
 	case <-term:
 	}
+}
+
+func NewServer(h IRequestHandler) *Server {
+	return &Server{
+		worker: h,
+	}
+}
+
+func RunService(port string) {
+	s := NewServer(handler.RequestHandler{})
+	s.Run(port)
 }
