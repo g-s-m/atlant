@@ -19,12 +19,12 @@ build: grpc format
 	GOBIN=$(GOBIN) CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/$(GONAME) -a -tags netgo -ldflags '-w -extldflags "-static"' -o bin/$(GONAME)
 
 test: build
-	go test
+	go test ./service/ ./service/handler/
 
 coverage:
 	go test -cover ./service/
 
 all: test
 
-add:
-	docker build --build-arg APPNAME=${APPNAME} --build-arg APPVERSION=${APPVERSION} -t docker-bld.repo.aligntech.com/colt-${APPNAME}:${APPVERSION} .
+container:
+	docker build -t sgomenyuk/atlant:latest .
