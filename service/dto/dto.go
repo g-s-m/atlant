@@ -30,15 +30,15 @@ var ErrorToStatusTranslate = map[errors.ErrorType]pb.FetchReply_Status{
 }
 
 type Product struct {
-	Name        string
-	Price       float64
-	ChangeCount uint64
-	ChangeDate  time.Time
+	Name        string    `bson:"product"`
+	Price       float64   `bson:"price"`
+	ChangeCount uint64    `bson:"change_count"`
+	ChangeDate  time.Time `bson:"change_date"`
 }
 
 type Page struct {
-	start uint64
-	size  int64
+	Start uint64
+	Size  int64
 }
 
 type SortParams struct {
@@ -55,8 +55,8 @@ func SortDto(s *pb.Sort) SortParams {
 
 func PageDto(page *pb.Page) Page {
 	return Page{
-		start: page.GetStart(),
-		size:  page.GetSize(),
+		Start: page.GetStart(),
+		Size:  page.GetSize(),
 	}
 }
 

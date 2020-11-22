@@ -3,7 +3,6 @@ package service
 import (
 	srv "atlant/generated/interface"
 	dto "atlant/service/dto"
-	"atlant/service/handler"
 	"context"
 	"log"
 	"net"
@@ -16,7 +15,7 @@ import (
 
 type IRequestHandler interface {
 	DoFetch(file string) error
-	DoList(page dto.Page, sort dto.SortParams) ([]dto.Product, error)
+	DoList(page dto.Page, sort dto.SortParams) ([]*dto.Product, error)
 }
 
 type Server struct {
@@ -46,7 +45,7 @@ func (s *Server) Fetch(ctx context.Context, request *srv.FetchRequest) (*srv.Fet
 
 func (s *Server) List(ctx context.Context, request *srv.ListRequest) (*srv.ListReply, error) {
 	doneCh := make(chan struct{})
-	products := []dto.Product{}
+	products := []*dto.Product{}
 	go func() {
 		var err error
 		products, err = s.worker.DoList(dto.PageDto(request.GetPage()), dto.SortDto(request.GetSort()))
@@ -62,7 +61,7 @@ func (s *Server) List(ctx context.Context, request *srv.ListRequest) (*srv.ListR
 		log.Printf("Operation was canceled")
 	case <-doneCh:
 		for _, p := range products {
-			product := dto.ProductDto(p)
+			product := dto.ProductDto(*p)
 			result = append(result, &product)
 		}
 	}
@@ -102,9 +101,4 @@ func NewServer(h IRequestHandler) *Server {
 	return &Server{
 		worker: h,
 	}
-}
-
-func RunService(port string) {
-	s := NewServer(handler.RequestHandler{})
-	s.Run(port)
 }

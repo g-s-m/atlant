@@ -1,14 +1,18 @@
 package main
 
 import (
+	"atlant/data/mongo"
 	"atlant/service"
+	"atlant/service/handler"
 	"log"
+	"time"
 
 	"github.com/vrischmann/envconfig"
 )
 
 type Config struct {
-	Port string `envconfig:"PS_ADDR_PORT,default=:50000"`
+	Port     string `envconfig:"PS_ADDR_PORT,default=:50000"`
+	Database string `envconfig:"DB_CONNECT,default=mongodb://127.0.0.1:27017"`
 }
 
 func getConfig() *Config {
@@ -21,5 +25,24 @@ func getConfig() *Config {
 
 func main() {
 	conf := getConfig()
-	service.RunService(conf.Port)
+
+	repo := mongo.NewProductsActions(conf.Database, 10*time.Second)
+	repo.Save("product_1", 1.12)
+	repo.Save("product_4", 2.12)
+	repo.Save("product_2", 6.12)
+	repo.Save("product_3", 4.12)
+
+	r, err := repo.LoadByChangeCount(0, 2, false)
+	if err != nil {
+		log.Printf("Error: %v", err)
+	}
+	for _, e := range r {
+		log.Printf(" %v ", *e)
+	}
+
+	s := service.NewServer(handler.NewRequestHandler(repo))
+	s.Run(conf.Port)
+
+	//repo := data.CreateRepo(db)
+	//repo.LoadByProduct()
 }
