@@ -26,23 +26,7 @@ func getConfig() *Config {
 func main() {
 	conf := getConfig()
 
-	repo := mongo.NewProductsActions(conf.Database, 10*time.Second)
-	repo.Save("product_1", 1.12)
-	repo.Save("product_4", 2.12)
-	repo.Save("product_2", 6.12)
-	repo.Save("product_3", 4.12)
-
-	r, err := repo.LoadByChangeCount(0, 2, false)
-	if err != nil {
-		log.Printf("Error: %v", err)
-	}
-	for _, e := range r {
-		log.Printf(" %v ", *e)
-	}
-
+	repo := mongo.NewProductsActions(conf.Database, 60*time.Second)
 	s := service.NewServer(handler.NewRequestHandler(repo))
 	s.Run(conf.Port)
-
-	//repo := data.CreateRepo(db)
-	//repo.LoadByProduct()
 }

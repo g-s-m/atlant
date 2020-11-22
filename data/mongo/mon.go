@@ -22,14 +22,16 @@ func (p ProductsActions) page(start uint64, leng int64, opts *options.FindOption
 	if leng > 0 {
 		opts.SetLimit(leng)
 	}
-	cursor, err := p.collection.Find(context.Background(), bson.M{}, opts)
+	ctx, cancel := context.WithTimeout(context.Background(), p.timeout)
+	defer cancel()
+	cursor, err := p.collection.Find(ctx, bson.M{}, opts)
 	defer cursor.Close(context.Background())
 	if err != nil {
 		log.Printf("Can't get data from DB, %v", err)
 		return []*dto.Product{}, nil
 	}
 	var results []*dto.Product
-	for cursor.Next(context.TODO()) {
+	for cursor.Next(ctx) {
 
 		// create a value into which the single document can be decoded
 		var elem dto.Product
@@ -61,7 +63,9 @@ func (p ProductsActions) Save(product string, price float64) error {
 			{"price", price},
 		}},
 	}
-	result, err := p.collection.UpdateOne(context.Background(), filter, update, opts)
+	ctx, cancel := context.WithTimeout(context.Background(), p.timeout)
+	defer cancel()
+	result, err := p.collection.UpdateOne(ctx, filter, update, opts)
 	if err != nil {
 		log.Printf("Error during inserting document: %v", err)
 		return err

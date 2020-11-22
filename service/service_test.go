@@ -31,15 +31,15 @@ func (h HandlerMock) DoFetch(file string) error {
 	return nil
 }
 
-func (h HandlerMock) DoList(page dto.Page, sort dto.SortParams) ([]dto.Product, error) {
-	return []dto.Product{
-		dto.Product{
+func (h HandlerMock) DoList(page dto.Page, sort dto.SortParams) ([]*dto.Product, error) {
+	return []*dto.Product{
+		&dto.Product{
 			Name:        "product",
 			Price:       1.234,
 			ChangeCount: 0,
 			ChangeDate:  time.Date(2020, 11, 1, 12, 0, 0, 0, time.UTC),
 		},
-		dto.Product{
+		&dto.Product{
 			Name:        "product2",
 			Price:       5.678,
 			ChangeCount: 1,
@@ -56,9 +56,9 @@ func (h HandlerLongOperationMock) DoFetch(file string) error {
 	return nil
 }
 
-func (h HandlerLongOperationMock) DoList(page dto.Page, sort dto.SortParams) ([]dto.Product, error) {
+func (h HandlerLongOperationMock) DoList(page dto.Page, sort dto.SortParams) ([]*dto.Product, error) {
 	time.Sleep(10 * time.Second)
-	return []dto.Product{}, nil
+	return []*dto.Product{}, nil
 }
 
 func TestServiceFetchOk(t *testing.T) {

@@ -9,19 +9,10 @@ import (
 	"log"
 	"strconv"
 	"strings"
-
-	"fmt"
 )
 
 type RequestHandler struct {
 	repo data.IProductsActions
-}
-
-func store(records [][]string) error {
-	for r := range records {
-		fmt.Println(r)
-	}
-	return nil
 }
 
 func (p RequestHandler) DoFetch(path string) error {
@@ -30,6 +21,7 @@ func (p RequestHandler) DoFetch(path string) error {
 		return err
 	}
 	r := csv.NewReader(strings.NewReader(string(file)))
+	r.Comma = ';'
 	records, err := r.ReadAll()
 	if err != nil {
 		log.Printf("Error in csv file: %v", err)
@@ -59,13 +51,13 @@ func (p RequestHandler) DoList(page dto.Page, sort dto.SortParams) ([]*dto.Produ
 			return p.repo.LoadByProduct(start, leng, upSort)
 		},
 		dto.ByPrice: func(start uint64, leng int64, upSort bool) ([]*dto.Product, error) {
-			return p.repo.LoadByProduct(start, leng, upSort)
+			return p.repo.LoadByPrice(start, leng, upSort)
 		},
 		dto.ByPriceChange: func(start uint64, leng int64, upSort bool) ([]*dto.Product, error) {
-			return p.repo.LoadByProduct(start, leng, upSort)
+			return p.repo.LoadByChangeCount(start, leng, upSort)
 		},
 		dto.ByLastChange: func(start uint64, leng int64, upSort bool) ([]*dto.Product, error) {
-			return p.repo.LoadByProduct(start, leng, upSort)
+			return p.repo.LoadByDate(start, leng, upSort)
 		},
 	}
 	return s[sort.Type](page.Start, page.Size, sort.SortUp)
