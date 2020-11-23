@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlant
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: atlant
+  template:
+    metadata:
+      labels:
+        app: atlant
+    spec:
+      containers:
+      - name: atlant
+        image: sgomenyuk/atlant:latest
+        imagePullPolicy: Always
+        env:
+        - name: PS_ADDR_PORT
+          value: ":8082"
+        - name: DB_USER
+          value: "auser"
+        - name: DB_ADDR
+          value: "cluster0.9aypu.mongodb.net"
+        - name: DB_PSWD
+          valueFrom: 
+            secretKeyRef:
+              name: atlant
+              key: mongo-pswd
+        ports:
+        - containerPort: 8082

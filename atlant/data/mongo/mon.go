@@ -119,10 +119,11 @@ func (p ProductsActions) LoadByDate(start uint64, leng int64, upSort bool) ([]*d
 	return p.page(start, leng, opts)
 }
 
-func NewProductsActions(connection string, timeout time.Duration) ProductsActions {
+func NewProductsActions(addr string, user string, pswd string, timeout time.Duration) ProductsActions {
+	connection := "mongodb+srv://" + user + ":" + pswd + "@" + addr + "/atlant?retryWrites=true&w=majority"
 	client, err := mongo.NewClient(options.Client().ApplyURI(connection))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Connection failed with error: %v", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -130,7 +131,7 @@ func NewProductsActions(connection string, timeout time.Duration) ProductsAction
 
 	err = client.Connect(ctx)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Connect failed with error: %v", err)
 	}
 
 	// Check the connection

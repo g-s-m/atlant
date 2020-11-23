@@ -6,11 +6,11 @@ RUN curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v3.14
 RUN unzip -o protoc-3.14.0-linux-x86_64.zip -d /usr/local bin/protoc
 RUN go get google.golang.org/protobuf/cmd/protoc-gen-go
 RUN go get google.golang.org/grpc/cmd/protoc-gen-go-grpc
-WORKDIR /build
-COPY . /build
+WORKDIR /atlant
+COPY . /atlant
 RUN make
 
 FROM alpine
-COPY --from=builder /build/bin/atlant /app/atlant
+COPY --from=builder /atlant/bin/atlant /app/atlant
 ENTRYPOINT ["/app/atlant"]
 

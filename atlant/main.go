@@ -11,8 +11,10 @@ import (
 )
 
 type Config struct {
-	Port     string `envconfig:"PS_ADDR_PORT,default=:50000"`
-	Database string `envconfig:"DB_CONNECT,default=mongodb://127.0.0.1:27017"`
+	Port   string `envconfig:"PS_ADDR_PORT,default=:50000"`
+	DbAddr string `envconfig:"DB_CONNECT,default=cluster0.9aypu.mongodb.net"`
+	DbPswd string `envconfig:"DB_PSWD"`
+	DbUser string `envconfig:"DB_USER,default=auser"`
 }
 
 func getConfig() *Config {
@@ -26,7 +28,7 @@ func getConfig() *Config {
 func main() {
 	conf := getConfig()
 
-	repo := mongo.NewProductsActions(conf.Database, 60*time.Second)
+	repo := mongo.NewProductsActions(conf.DbAddr, conf.DbUser, conf.DbPswd, 60*time.Second)
 	s := service.NewServer(handler.NewRequestHandler(repo))
 	s.Run(conf.Port)
 }
