@@ -64,7 +64,7 @@ data:
                 address:
                   socket_address:
                     address: atlant.default.svc.cluster.local
-                    port_value: 8081
+                    port_value: 8082
         health_checks:
           timeout: 1s
           interval: 10s

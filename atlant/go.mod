@@ -3,6 +3,7 @@ module atlant
 go 1.13
 
 require (
+	github.com/fullstorydev/grpcurl v1.7.0 // indirect
 	github.com/golang/protobuf v1.4.3
 	github.com/vrischmann/envconfig v1.3.0
 	go.mongodb.org/mongo-driver v1.4.3
