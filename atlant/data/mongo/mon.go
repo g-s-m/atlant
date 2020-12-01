@@ -47,30 +47,56 @@ func (p ProductsActions) page(start uint64, leng int64, opts *options.FindOption
 }
 
 func (p ProductsActions) Save(product string, price float64) error {
-	opts := options.Update().SetUpsert(true)
-
-	filter := bson.D{{"product", product}}
-	update := bson.D{
-		{"$inc", bson.D{
-			{"change_count", 1},
-		}},
-		{"$currentDate", bson.D{
-			{"change_date", bson.D{
-				{"$type", "timestamp"},
-			}},
-		}},
-		{"$set", bson.D{
-			{"price", price},
-		}},
-	}
 	ctx, cancel := context.WithTimeout(context.Background(), p.timeout)
 	defer cancel()
-	result, err := p.collection.UpdateOne(ctx, filter, update, opts)
+	update := false
+	r := dto.Product{}
+	err := p.collection.FindOne(ctx, bson.D{{"product", product}}).Decode(&r)
 	if err != nil {
-		log.Printf("Error during inserting document: %v", err)
-		return err
+		//error during finding
+		if err == mongo.ErrNoDocuments {
+			//no doc in db
+			log.Printf("Found no document")
+			update = true
+		} else {
+			log.Printf("Error during finding document: %v", err)
+			return err
+		}
+	} else {
+		//found doc
+		if r.Price != price {
+			update = true
+		}
 	}
-	log.Printf("Upserted %d, Modified %d", result.UpsertedCount, result.ModifiedCount)
+
+	if update {
+		opts := options.Update().SetUpsert(true)
+
+		filter := bson.D{{"product", product}}
+		update := bson.D{
+			{"$inc", bson.D{
+				{"change_count", 1},
+			}},
+			{"$currentDate", bson.D{
+				{"change_date", bson.D{
+					{"$type", "timestamp"},
+				}},
+			}},
+			{"$set", bson.D{
+				{"price", price},
+			}},
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), p.timeout)
+		defer cancel()
+		result, err := p.collection.UpdateOne(ctx, filter, update, opts)
+		if err != nil {
+			log.Printf("Error during inserting document: %v", err)
+			return err
+		}
+		log.Printf("Upserted %d, Modified %d", result.UpsertedCount, result.ModifiedCount)
+		return nil
+	}
+	log.Printf("Price wasn't change, return")
 	return nil
 }
 
